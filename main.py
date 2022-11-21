@@ -25,7 +25,7 @@ def get_host(host, local_port):
     return port,plain_host
 
 
-# save to file
+# save to file TODO error handling
 def save_response(response, filename = "../response.html"):
     # save response to file
     try:
@@ -40,7 +40,7 @@ def save_response(response, filename = "../response.html"):
 
 # read from file
 def read_file(filename):
-    content = []
+    content = ""
     try:
         file = open(filename, "r")
         content = file.read()
@@ -56,7 +56,7 @@ LOCAL_PORT = 3000
 PORT = 80
 
 # Choose host by args: no args: localhost, np: nordpool.com, yl: yle.fi, -s: save response
-HOST_ARGS = ["-lh", "-np", "-yl", "-il"]
+HOST_ARGS = ["-lh", "-np", "-yl", "-il", "-fg"]
 HOST_LIST = list(HOST_ARGS)
 
 hosts = read_file("hosts.json")
@@ -64,15 +64,15 @@ if(hosts != None):
     HOST_LIST = json.loads(hosts)
 else:
     HOST_LIST[0] = "127.0.0.1"
-print(HOST_LIST)
 
-HOST_DICT = {
-    HOST_ARGS[0]: HOST_LIST[0],
-    HOST_ARGS[1]: HOST_LIST[1],
-    HOST_ARGS[2]: HOST_LIST[2],
-    HOST_ARGS[3]: HOST_LIST[3]
-}
+HOST_DICT = {}
+a_max = min(len(HOST_ARGS), len(HOST_LIST))
 
+# Create key-value dictionary of possible hosts
+for a in range(a_max):
+    HOST_DICT[HOST_ARGS[a]] = HOST_LIST[a]
+
+print(HOST_DICT)
 
 #### Script start
 print("\n Valid arguments for choosing host are the following:")
@@ -91,14 +91,17 @@ for a in sys.argv:
         host_index = HOST_ARGS.index(a)
         good_arg = host_index
     except ValueError:
-        host_index = good_arg # default to localhost
+        host_index = good_arg # revert to a good one
 HOST = HOST_LIST[host_index]
 
 # urllib experiment
 # resolve port and host
 PORT, plain_host = get_host(HOST, LOCAL_PORT)
+print(plain_host)
+
 # get response
 response_obj = urllib.request.urlopen("http://" + plain_host + ":" + str(PORT), data=None, timeout=6.0)
+
 # print((response_obj.headers))
 try:
     c_type = response_obj.headers["Content-Type"]
@@ -106,8 +109,8 @@ except:
     c_type = ""
 
 # to string
-response_str = str(response_obj.read())
-
+response_str = str(response_obj.read(), 'utf-8')
+print(response_str)
 # save response to file with id (first number sequence as id)
 response_id = re.search("\d+", response_str).group() 
 
@@ -123,6 +126,7 @@ if (response_id != None):
         save_response(response_str, "./data/response" + str(response_id) + file_type)
 
 # TODO find data
+
 exit("done")
 
 ##############################
@@ -130,13 +134,17 @@ exit("done")
 # print("HOST: " + plain_host)
 
 # setup header
+# broken:
 accept_header = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-# req_header = "GET / HTTP/1.1\r\nHost: 127.0.0.1\r\nAccept: text/html\r\n"
-req_header = "GET / HTTP/1.1\r\nHost: {}\r\nAccept: {}\r\n".format(plain_host, accept_header)
-# TODO fix formatting
+# req_header = "GET / HTTP/1.0\r\nHost: 127.0.0.1\r\nAccept: text/plain\r\n"
+# req_header = "GET / HTTP/1.0\r\nHost: {}\r\nAccept: {}\r\n".format(plain_host, accept_header)
+# good header for localhost:
+req_header = "GET / HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n"
+# TODO general header
+plain_host = HOST_LIST[0]# choose local host
 
 # byte header
-req_header_b = bytes(req_header, 'utf8')
+req_header_b = bytes(req_header, 'utf-8')
 print(req_header_b)
 if("{" in req_header):
     exit("Invalid header - exiting")
@@ -155,7 +163,6 @@ print("sending")
 client_socket.sendall(req_header_b)
 
 # receive response
-# TODO broken again
 response = ''
 print("waiting for response")
 failed_recv = False
