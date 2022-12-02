@@ -6,6 +6,9 @@ import socket
 import re
 import sys
 import json
+from filehandler import FileHandler
+
+FH = FileHandler
 
 #### Functions
 
@@ -25,31 +28,6 @@ def get_host(host, local_port):
     return port,plain_host
 
 
-# save to file TODO error handling
-def save_response(response, filename = "../response.html"):
-    # save response to file
-    try:
-        response_file = open(filename, "w")
-        response_file.write(response)
-        response_file.write("\n")
-        response_file.close()
-        print("response saved to " + filename)
-    except:
-        print("File write error")
-
-
-# read from file
-def read_file(filename):
-    content = ""
-    try:
-        file = open(filename, "r")
-        content = file.read()
-    except:
-        print ("File open error")
-        return None
-    return content
-
-
 #### Constants/variables
 HOST = ""
 LOCAL_PORT = 3000
@@ -59,7 +37,7 @@ PORT = 80
 HOST_ARGS = ["-lh", "-np", "-yl", "-il", "-fg"]
 HOST_LIST = list(HOST_ARGS)
 
-hosts = read_file("hosts.json")
+hosts = FH.read_file(FH, "hosts.json")
 if(hosts != None):
     HOST_LIST = json.loads(hosts)
 else:
@@ -72,7 +50,7 @@ a_max = min(len(HOST_ARGS), len(HOST_LIST))
 for a in range(a_max):
     HOST_DICT[HOST_ARGS[a]] = HOST_LIST[a]
 
-print(HOST_DICT)
+# print(HOST_DICT)
 
 #### Script start
 print("\n Valid arguments for choosing host are the following:")
@@ -110,7 +88,8 @@ except:
 
 # to string
 response_str = str(response_obj.read(), 'utf-8')
-print(response_str)
+print(response_str[0:min(len(response_str) - 1, 80)])
+
 # save response to file with id (first number sequence as id)
 response_id = re.search("\d+", response_str).group() 
 
@@ -123,9 +102,9 @@ if (response_id != None):
         file_type = ".txt"
 
     if (saving_on):
-        save_response(response_str, "./data/response" + str(response_id) + file_type)
+        FH.save_data_file(FH, response_str, "./data/response" + str(response_id) + file_type)
 
-# TODO find data
+# TODO find data sources
 
 exit("done")
 
