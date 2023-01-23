@@ -1,4 +1,5 @@
-# Project purpose: Try Python to get and display electricity price
+# Project purpose: Get and display electricity price or other interesting data.
+#
 # Starting with tutorial: <https://www.scrapingbee.com/blog/web-scraping-101-with-python/>
 
 import urllib.request
@@ -6,11 +7,26 @@ import socket
 import re
 import sys
 import json
+import sched, time
 from filehandler import FileHandler
+from responsehandler import ResponseHandler
+from traffichandler import TrafficHandler
+
+main_scheduler = sched.scheduler(time.time, time.sleep)
 
 FH = FileHandler
+CORE_PROPS_WINDOWS = "%PROGRAMDATA%/SteelSeries/SteelSeries Engine 3/coreProps.json"
+CORE_PROPS_OSX = "/Library/Application Support/SteelSeries Engine 3/coreProps.json"
 
 #### Functions
+def get_coreprops_filepath():
+    if(sys.platform.startswith('win32')):
+        return CORE_PROPS_WINDOWS
+    elif(sys.platform.startswith('darwin')):
+        return CORE_PROPS_OSX
+    else:
+        print("Unsupported OS")
+        return ""
 
 # Parse hostname
 def get_host(host, local_port):
@@ -30,11 +46,12 @@ def get_host(host, local_port):
 
 #### Constants/variables
 HOST = ""
-LOCAL_PORT = 3000
+LOCAL_PORT = 3001
 PORT = 80
 
-# Choose host by args: no args: localhost, np: nordpool.com, yl: yle.fi, -s: save response
-HOST_ARGS = ["-lh", "-np", "-yl", "-il", "-fg"]
+# Choose host by args: no args: localhost, np: nordpool.com, yl: yle.fi, -s: save response, ...
+# mi: prod. prediction (fmi.fi)
+HOST_ARGS = ["-lh", "-np", "-yl", "-il", "-fg", "-mi"]
 HOST_LIST = list(HOST_ARGS)
 
 hosts = FH.read_file(FH, "hosts.json")
@@ -105,8 +122,37 @@ if (response_id != None):
         FH.save_data_file(FH, response_str, "./data/response" + str(response_id) + file_type)
 
 # TODO find data sources
+# Try interpreting predictions
+if(HOST_ARGS[host_index] == "mi"):
+    ResponseHandler.handle_prediction(response_str)
 
-exit("done")
+
+# Load SteelSeries color format from file
+color_json = FH.read_file(FH, "colordata.json")
+if(color_json != None):
+    try:
+        color_message = json.loads(color_json)
+        print("Color data:")
+        print(color_message)
+    except ValueError:
+        print("Error with JSON")
+else: print("No data ")
+
+# get destination address from CORE_PROPS_WINDOWS
+core_file = get_coreprops_filepath()
+
+# TODO read address from file
+core_content = FH.read_file(FH, core_file)
+if(core_content != None):
+    core_json = json.loads(core_content)
+    print(core_json)
+else: print("Props not found")
+
+
+# TODO try posting data for illumination control
+
+
+exit("\ndone")
 
 ##############################
 # socket experiment
