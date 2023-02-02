@@ -11,6 +11,7 @@ import sched, time
 from filehandler import FileHandler
 from responsehandler import ResponseHandler
 from traffichandler import TrafficHandler
+from datahandler import DataHandler as DH
 
 main_scheduler = sched.scheduler(time.time, time.sleep)
 
@@ -18,15 +19,41 @@ FH = FileHandler
 CORE_PROPS_WINDOWS = "%PROGRAMDATA%/SteelSeries/SteelSeries Engine 3/coreProps.json"
 CORE_PROPS_OSX = "/Library/Application Support/SteelSeries Engine 3/coreProps.json"
 
+# GameSense message for illumination
+color_message = {}
+
+# GameSense address as "host:port"
+gamesense_address = ""
+
 #### Functions
 def get_coreprops_filepath():
     if(sys.platform.startswith('win32')):
-        return CORE_PROPS_WINDOWS
+        return resolve_path_win(CORE_PROPS_WINDOWS)
     elif(sys.platform.startswith('darwin')):
         return CORE_PROPS_OSX
     else:
         print("Unsupported OS")
         return ""
+
+
+def resolve_path_win(old_path):
+    new_path = "C:/" + re.sub('%', '', old_path, count=2)
+    return new_path
+
+
+# get destination address
+def get_destination_address(FH, get_coreprops_filepath):
+    core_file = get_coreprops_filepath()
+
+# read address from file
+    core_content = FH.read_file(FH, core_file)
+    if(core_content != None):
+        core_json = json.loads(core_content) # to object
+        return(core_json["address"])
+    else:
+        print("Props not found")
+        return ""
+
 
 # Parse hostname
 def get_host(host, local_port):
@@ -89,13 +116,47 @@ for a in sys.argv:
         host_index = good_arg # revert to a good one
 HOST = HOST_LIST[host_index]
 
+
+# Load SteelSeries color format from file
+color_json = FH.read_file(FH, "colordata.json")
+if(color_json != None):
+    try:
+        color_message = json.loads(color_json)
+    except ValueError:
+        print("Error with JSON")
+else: print("No data ")
+
+# SteelSeries local address
+gamesense_address = get_destination_address(FH, get_coreprops_filepath)
+
+print("GameSense server: " + gamesense_address)
+print("Color data:")
+print(color_message)
+
+# change color data for LED mouse
+DH.change_data(color_message, "device-type", "mouse")
+# DH.change_data(color_message, "zone", "wheel")
+DH.change_data(color_message, "zone", "logo")
+DH.change_data(color_message, "mode", "count")
+DH.change_data(color_message["rate"], "frequency", "high")
+
+DH.print_data(color_message, "color data: ")
+
+# TODO try posting data for illumination control
+
+
+
 # urllib experiment
 # resolve port and host
 PORT, plain_host = get_host(HOST, LOCAL_PORT)
 print(plain_host)
 
-# get response
-response_obj = urllib.request.urlopen("http://" + plain_host + ":" + str(PORT), data=None, timeout=6.0)
+try:
+    response_obj = urllib.request.urlopen("http://" + plain_host + ":" + str(PORT), data=None, timeout=6.0)
+except urllib.error.URLError as err:
+    print("URLError: " + str(err.reason))
+    # TODO handle error, refactor
+    ResponseHandler.handle_error(ResponseHandler, err)
 
 # print((response_obj.headers))
 try:
@@ -125,32 +186,6 @@ if (response_id != None):
 # Try interpreting predictions
 if(HOST_ARGS[host_index] == "mi"):
     ResponseHandler.handle_prediction(response_str)
-
-
-# Load SteelSeries color format from file
-color_json = FH.read_file(FH, "colordata.json")
-if(color_json != None):
-    try:
-        color_message = json.loads(color_json)
-        print("Color data:")
-        print(color_message)
-    except ValueError:
-        print("Error with JSON")
-else: print("No data ")
-
-# get destination address from CORE_PROPS_WINDOWS
-core_file = get_coreprops_filepath()
-
-# TODO read address from file
-core_content = FH.read_file(FH, core_file)
-if(core_content != None):
-    core_json = json.loads(core_content)
-    print(core_json)
-else: print("Props not found")
-
-
-# TODO try posting data for illumination control
-
 
 exit("\ndone")
 
