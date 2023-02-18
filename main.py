@@ -10,14 +10,16 @@ import json
 import sched, time
 from filehandler import FileHandler
 from responsehandler import ResponseHandler
-from traffichandler import TrafficHandler
+from traffichandler import TrafficHandler as TH
 from datahandler import DataHandler as DH
+
 
 main_scheduler = sched.scheduler(time.time, time.sleep)
 
 FH = FileHandler
 CORE_PROPS_WINDOWS = "%PROGRAMDATA%/SteelSeries/SteelSeries Engine 3/coreProps.json"
 CORE_PROPS_OSX = "/Library/Application Support/SteelSeries Engine 3/coreProps.json"
+DRIVER_PATH = 'r"C:/webdriver"'
 
 # GameSense message for illumination
 color_message = {}
@@ -150,9 +152,9 @@ DH.print_data(color_message, "color data: ")
 # resolve port and host
 PORT, plain_host = get_host(HOST, LOCAL_PORT)
 print(plain_host)
-
+host_port = "http://" + plain_host + ":" + str(PORT)
 try:
-    response_obj = urllib.request.urlopen("http://" + plain_host + ":" + str(PORT), data=None, timeout=6.0)
+    response_obj = urllib.request.urlopen(host_port, data=None, timeout=6.0)
 except urllib.error.URLError as err:
     print("URLError: " + str(err.reason))
     # TODO handle error, refactor
@@ -180,7 +182,13 @@ if (response_id != None):
         file_type = ".txt"
 
     if (saving_on):
-        FH.save_data_file(FH, response_str, "./data/response" + str(response_id) + file_type)
+        save_name = "./data/response" + str(response_id) + file_type
+        FH.save_data_file(FH, response_str, save_name)
+        print("Saved ")
+
+# taking screenshot of response
+screenshot = TH.get_web_screen(host_port, DRIVER_PATH, "./data/screen.png")
+print(screenshot)
 
 # TODO find data sources
 # Try interpreting predictions
