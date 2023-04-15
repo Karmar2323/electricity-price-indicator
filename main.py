@@ -145,7 +145,8 @@ DH.change_data(color_message["rate"], "frequency", "high")
 DH.print_data(color_message, "color data: ")
 
 # TODO try posting data for illumination control
-
+# address, data, method = TH.init_request(TH, gamesense_address, color_message, "POST")
+# TH.make_request(TH, address, data, method)
 
 
 # urllib experiment
@@ -187,7 +188,7 @@ if (response_id != None):
         print("Saved ")
 
 # taking screenshot of response
-screenshot = TH.get_web_screen(host_port, DRIVER_PATH, "./data/screen.png")
+screenshot = TH.get_web_screen(TH, host_port, DRIVER_PATH, "./data/screen.png")
 print(screenshot)
 
 # TODO find data sources

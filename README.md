@@ -11,3 +11,6 @@ SteelSeries documentation:
 
 Local server to use with the development:
 [node-dev-server](https://github.com/Karmar2323/node-dev-server)
+
+## Description
+Incomplete

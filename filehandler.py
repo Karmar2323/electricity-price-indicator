@@ -33,6 +33,7 @@ class FileHandler:
         try:
             file = open(filename, "r")
             content = file.read()
+            file.close()
         except:
             print ("File open error")
             return None
