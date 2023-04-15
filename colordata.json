@@ -1,0 +1,11 @@
+{
+    "device-type": "rgb-zoned-device",
+    "zone": "function-keys",
+    "custom-zone-keys": [],
+    "mode": "partial-bitmap",
+    "color": { "red": 255, "green": 255, "blue": 255 },
+    "rate": {
+        "frequency": 2
+      },
+    "context-frame-key": ""
+}
